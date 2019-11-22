@@ -18,7 +18,8 @@ wBufSize equ 40h 	;kiek simboliu per viena syki israso
 	rHandle 		dw ?															;skaitymo deskriptorius
 	wHandle			dw ?															;rasymo deskriptorius
 	bufLength		dw ?													     	;buferio ilgis													
-	lineLength		db 0															;spausdinamos eilutes ilgis
+	byteNumber		db 0															;kiek baitu komanda uzima
+	lineLength		db 16 ;ip + 10 spaces + newLine															;spausdinamos eilutes ilgis
 ;eilutes isvedimui	
 	newLine 		db 13,10														;enteris	
 	colon			db ":"
@@ -40,7 +41,7 @@ wBufSize equ 40h 	;kiek simboliu per viena syki israso
 	;formatui
 	notFound		db ?
 	;spausdinimui
-	iPointer		db 0100h
+	iPointer		dw 0100h
 	commandLength	db 0
 	
 .code ;---kodas:
@@ -76,20 +77,18 @@ start:
 	push cx
 	xor si, si									 ;si bus duomenu buferio poslinkis (pozicijos pointeris)
 algorithm:	
-	mov bx, offset prefix
-	mov byte ptr[bx], 0	
 	mov bx, offset readBuf						 ;bx rodys duomenu buferio baito adresa
 	mov bp, offset writeBuf						 ;bp rodys rezultatu buferio baito adresa
 	xor di, di									 ;di bus rezultatu buferio poslinkis (pozicijos pointeris)
 
-afterPreFix:	
+afterPreFix:
 	mov al, byte ptr[bx+si]						 ;i al irasom baito reiksme
 	dec bufLength								 ;for(int i=bufLength; i!=0; i--)
 	inc si										 ;duomenu buferio poslinkio padidinimas
 	
 	call prefixCheck 		 				 	 ;paziuri ar baitas prefiksas ar ne
 	cmp trueFalse, 1
-	je afterPreFix
+	je write
 	
 	call whatFormat  							 ;neaprasyta (suzinomas formatas)
 	cmp notFound, 1
@@ -110,14 +109,12 @@ write:
 	pop dx
 	pop bp
 	pop bx
-	mov lineLength, dl							 ;dl pasako kiek simboliu isvesti
 	call writeToFile
+	mov byteNumber, 0
 	cmp bufLength, 0
 	jne algorithm	
 ;FAILU UZDARYMAS
 closer:
-	pop bx
-	pop ax
 	mov bx, rHandle 
 	call closeFile 								 ;uzdarom skaitymo faila
 	
@@ -136,9 +133,9 @@ introduction: 									 ;"/?" pagalbos isvedimas
 proc prefixCheck
 		push di
 		push cx
-		push bx
+		push bp
 	look:
-		mov cx, 0
+		mov cx, 2
 		mov trueFalse, 1
 		mov bx, offset prefix
 		cmp al, 26h
@@ -152,42 +149,141 @@ proc prefixCheck
 		mov trueFalse, 0
 		
 	back:
-		pop bx
+		pop bp
 		pop cx
 		pop di
 		ret
 		
 	extraSegment:
 		mov di, offset preES
-		call rewrite
-		jmp back
+		jmp found		
 	codeSegment:
 		mov di, offset preCS
-		call rewrite
-		jmp back
+		jmp found
 	stackSegment:
 		mov di, offset preSS
-		call rewrite
-		jmp back
+		jmp found
 	dataSegment:
 		mov di, offset preDS
+		jmp found
+	
+	found:
+		inc byteNumber
 		call rewrite
+		call writePrefix
 		jmp back
 prefixCheck endp
 
-proc rewrite
+proc rewrite ;cx=simboliu kiekis, di=[op1], bp=[op2]
 		push ax
 	taking:
-		mov ax, word ptr[di]
-		mov word ptr [bx], ax
+		mov al, byte ptr[di]
+		mov byte ptr [bp], al
 		inc di
-		inc bx
+		inc bp
 		loop taking
 		pop ax
-		ret
+		ret	
 rewrite endp
+proc writePrefix ;iPointer,colon,tab,al=masininis kodas,machineCode(tarpai),prefix,colon, 
+		push di
+		push cx
+	first:
+		call inputPointer
+		
+		push ax
+		mov al, byteNumber
+		add iPointer, al		;IP = IP + byteNumber
+		
+		call inputColon					
+		call inputTab
 
+		pop ax
+		mov cx, 2
+		call hexInput			;input machine code
+		
+		mov cl, 10
+		sub cl, byteNumber
+		mov di, offset machineCode
+		call rewrite			;input spaces
+	
+		mov cl, 2
+		mov di, offset prefix
+		call rewrite 			;input segment
+		add lineLength, cl
+
+		call inputColon
+		call inputNewLine
+		pop cx
+		pop di
+		ret	
+writePrefix endp
+proc inputColon
+		mov al, colon
+		mov byte ptr[bp], al
+		inc lineLength
+		inc bp
+		ret
+inputColon endp
+proc inputTab
+		mov al, tab
+		mov byte ptr[bp], al	
+		inc bp
+		inc lineLength
+inputTab endp
+proc inputNewLine
+		push si
+		mov cx,2
+		mov si, offset newLine
+	oneMore:
+		mov al, byte ptr[si]
+		mov byte ptr[bp], al
+		inc si
+		loop oneMore
+		pop si
+		ret
+inputNewLine endp
+proc inputPointer
+		push cx
+		push ax
+		mov ax, iPointer
+		mov cx, 4
+		call hexInput
+		pop ax
+		pop cx
+		ret
+inputPointer endp
+proc hexInput ; cx = kiek simboliu irasyt, ax = reiksme
+		push dx
+		push bx
+		mov dx, 2424h
+		push dx
+		mov bx, 16
+	divide:
+		xor dx, dx
+		div bx
+		push dx
+		loop divide
+	inputStack:
+		pop dx
+		cmp dx, "$$"
+		je emptyStack
+		add dl, '0'
+		mov byte ptr[bp], dl
+		inc bp
+		jmp inputStack
+	emptyStack:
+		pop dx
+		pop bx
+		ret
 proc whatFormat
+	push ax
+	push cx
+	xor cx, cx
+	and al, 11110000b
+	cmp al, cl
+	je Format0 ;idk
+	
 	
 proc printLine
 	mov ah, 09h
