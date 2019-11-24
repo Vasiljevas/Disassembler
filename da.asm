@@ -1,10 +1,12 @@
-.model small		;DISASEMBLERIS {beliko aprasyti atpazinimo algoritmo proceduras (ir ju proceduras)
+.model small ;DISASEMBLERIS PAGAL EMU8086
 ;nepamirsk visus komentarus istrinti pries atsiskaitant
-rBufSize equ 400h   ;kiek simboliu per viena syki perskaito
-wBufSize equ 40h 	;kiek simboliu per viena syki israso 
-;PROBLEMOS: 
-;
-.stack 100h 		;stekas = 256
+.386 ;Tai leidzia naudot procesoriaus 80386 komandu rinkini, kuriame apibreztas didesnis jumpu intervalas
+rBufSize equ 400h   																;kiek simboliu per viena syki perskaito
+wBufSize equ 40h 																	;kiek simboliu per viena syki israso 
+;PROBLEMOS/IDEJOS: 
+;galbut reikes proceduros, kuri tiesiog nauja baita ikelia i al (144 eilute), kad sutaupyt vietos
+;beliko parasyt mainFunction procedura
+.stack 100h 	
 .data 	
 ;darbui su failu
 	intro			db "Andrius Vasiljevas, 1 kursas, 2 grupe, programa:",10,13,"vercia masinini koda i assemblerio koda.",10,13,'$'
@@ -31,19 +33,73 @@ wBufSize equ 40h 	;kiek simboliu per viena syki israso
 	tab				db "	"
 	machineCode		db 10 dup (20h)													;10 tarpu masininiui kodui
 	space			db " "
-;disasembliavimui
-	;prefixam 
+	badCommand 		db "N", "E", "S", "U", "P", "R", "A", "S", "T", "A"
+;registrai
+	regAX			db "AX"
+	regBX			db "BX"
+	regCX			db "CX"
+	regDX			db "DX"
+	regAH			db "AH"
+	regAL			db "AL"
+	regBH			db "BH"
+	regBL			db "BL"
+	regCH			db "CH"
+	regCL			db "CL"
+	regDH			db "DH"
+	regDL			db "DL"
+	regSP			db "SP"
+	regBP			db "BP"
+	regSI			db "SI"
+	regDI			db "DI"
+;prefixam 
 	trueFalse		db ?
 	preES			db "ES"
 	preCS			db "CS"
 	preSS			db "SS"
 	preDS			db "DS"
 	prefix 			db 2 dup (?)
-	;formatui
+;komandos
+	comMOV			db "MOV"
+	comPUSH			db "PUSH"
+	comPOP			db "POP"
+	comADD			db "ADD"
+	comINC			db "INC"
+	comSUB			db "SUB"
+	comDEC			db "DEC"
+	comCMP			db "CMP"
+	comMUL			db "MUL"
+	comDIV			db "DIV"
+	comCALL			db "CALL"
+	comRET			db "RET"
+	comJMP			db "JMP"
+	comLOOP			db "LOOP"
+	comINT			db "INT"
+;salyginiai suoliai (17)
+	comJO			db "JO" 		;jo
+	comJNO			db "JNO"		;jno
+	comJB			db "JB"			;jnae, jb, jc
+	comJNB			db "JNB"		;jae, jnb, jnc
+	comJE			db "JE"			;je, jz
+	comJNE			db "JNE"		;jne, jnz
+	comJBE			db "JBE"		;jbe, jnae
+	comJNBE			db "JNBE"		;ja, jnbe
+	comJS			db "JS"			;js
+	comJNS			db "JNS"		;jns
+	comJPE			db "JPE"		;jp, jpe
+	comJPO			db "JPO"		;jnp, jpo
+	comJL			db "JL"			;jl, jnge
+	comJNL			db "JNL"		;jge, jnl
+	comJLE			db "JLE"		;jle, jng
+	comJNLE			db "JNLE"		;jg, jnle
+	comJCXZ			db "JCXZ"		;jcxz (format E.14)
+;formatui
 	notFound		db ?
-	;spausdinimui
+	theFormat		db ?						 ;galimybiu sritis: [0,5]v[7,F]
+;spausdinimui
 	iPointer		dw 0100h
-	commandLength	db 0
+	command			db 4 dup (20h)
+;atpazinimui
+	attribute		db ?
 	
 .code ;---kodas:
 start:
@@ -86,24 +142,25 @@ algorithm:
 	
 afterPreFix:
 	mov al, byte ptr[bx+si]						 ;i al irasom baito reiksme
-	;dec bufLength								 ;for(int i=bufLength; i!=0; i--)
 	inc si										 ;duomenu buferio poslinkio padidinimas
 	
 	call prefixCheck 		 				 	 ;paziuri ar baitas prefiksas ar ne, jei taip tai isveda
 	cmp trueFalse, 1
 	je write
 	
-	;call whatFormat  							 ;neaprasyta (suzinomas formatas)
+	call whatFormat  							 ;suzinomas formatas (theFormat) , NEZINAU AR VEIKIA, turbut veikia
 	cmp notFound, 1
 	je unknownCommand
 	
-	;call whatAttributes 						 ;neaprasyta (pagal formata nustatomi reikalingi pozymiai)
-
-	;call mainFunction							 ;neaprasyta (suzinoma konkreti komanda ir irasoma i buferi)
+	call whatAttributes 						 ;pagal formata nustatomi reikalingi pozymiai
+	cmp notFound, 1
+	je unknownCommand
+	
+	;call mainFunction							 ;NEAPRASYTA (suzinoma konkreti komanda ir irasoma i buferi)
 	jmp write
 	
 unknownCommand:
-	;call createUnknown 							 ;neaprasyta (sukuria neatpazintos komandos eilute)
+	call createUnknown 							 ;sukuria neatpazintos komandos eilute
 ;RASYMAS I FAILA
 write:
 	call writeToFile
@@ -187,15 +244,26 @@ proc rewrite ;cx=simboliu kiekis, di=[op1], bp=[op2]
 		pop ax
 		ret	
 rewrite endp
+
+proc machineCodeInput ;cx = kiek simboliu irasyt
+		push dx
+		call hexInput			;input machine code
+		mov cl, 10
+		mov dl, byteNumber
+		add dl, dl
+		sub cl, dl
+		mov si, offset machineCode
+		call rewrite			;input spaces  
+		pop dx
+        ret
+machineCodeInput endp
+
 proc writePrefix ;iPointer,colon,tab,al=masininis kodas,machineCode(tarpai),prefix,colon, 
 		push si
+		
 	first:
 		call inputPointer
-		
 		push ax
-		xor ax, ax
-		mov al, byteNumber
-		add iPointer, ax		;IP = IP + byteNumber
 		
 		mov al, colon			;input :
 		call input			
@@ -204,17 +272,11 @@ proc writePrefix ;iPointer,colon,tab,al=masininis kodas,machineCode(tarpai),pref
 
 		pop ax
 		mov cx, 2
-		call hexInput			;input machine code
-		
-		mov cl, 10
-		sub cl, byteNumber
-		mov si, offset machineCode
-		call rewrite			;input spaces
+		call machineCodeInput
 	
 		mov cl, 2
 		mov si, offset prefix
 		call rewrite 			;input segment
-		add lineLength, cl
 		
 		mov al, colon
 		call input
@@ -237,9 +299,13 @@ proc inputPointer
 		mov ax, iPointer
 		mov cx, 4
 		call hexInput
+		xor ax, ax
+		mov al, byteNumber
+		add iPointer, ax		;IP = IP + byteNumber
 		pop ax
 		ret
 inputPointer endp
+
 proc hexInput ; cx = kiek simboliu irasyt, ax = reiksme
 		push dx
 		push bx
@@ -256,6 +322,9 @@ proc hexInput ; cx = kiek simboliu irasyt, ax = reiksme
 		cmp dx, "$$"
 		je emptyStack
 		add dl, '0'
+		cmp dl, '9'
+		jg greaterThan9
+	mainInput:
 		mov byte ptr[di], dl
 		inc di
 		jmp inputStack
@@ -263,18 +332,340 @@ proc hexInput ; cx = kiek simboliu irasyt, ax = reiksme
 		pop dx
 		pop bx
 		ret
+	greaterThan9:
+		add dl, 7h
+		jmp mainInput
 hexInput endp
-proc whatFormat ;in progress
+
+proc whatFormat ;theFormat rodo surasta komandos formata
 		push ax
 		push cx
 		xor cx, cx
-		and al, 11110000b
+		shr al, 4
+		cmp al, 6h
+		je badByte
+		cmp al, 0Dh
+		je badByte
 	comparing:
 		cmp al, cl
-		je format0
+		je formating
+		inc cl
+		jmp comparing
 		
+	formating:
+		mov theFormat, cl
+		
+	stopFormating:
+		pop cx
+		pop ax
+		ret
+		
+	badByte:
+		mov notFound, 1
+		inc byteNumber
+		jmp stopFormating
 whatFormat endp	
 
+proc whatAttributes;surandama kokius pozymius reiks naudoti, theFormat = formatas,al = pirmas baitas
+		push cx
+		push ax
+		xor cx, cx
+		and al, 00001111b
+	whichOne:
+		cmp theFormat, cl
+		je format0
+		inc cl
+		cmp theFormat, cl
+		je format1
+		inc cl
+		cmp theFormat, cl
+		je format2
+		inc cl
+		cmp theFormat, cl
+		je format3
+		inc cl
+		cmp theFormat, cl
+		je attribute3
+		inc cl
+		cmp theFormat, cl
+		je attribute3
+		add cl, 2
+		cmp theFormat, cl
+		je attribute14
+		inc cl
+		cmp theFormat, cl
+		je format8
+		inc cl
+		cmp theFormat, cl
+		je attribute16
+		inc cl
+		cmp theFormat, cl
+		je formatA
+		inc cl
+		cmp theFormat, cl
+		je attribute13
+		inc cl
+		cmp theFormat, cl
+		je formatC
+		add cl, 2
+		cmp theFormat, cl
+		je formatE
+		jmp formatF
+		
+	format0:	
+		cmp al, 0Eh
+		jge attribute11
+		cmp al, 8
+		jge veryBadByte
+		cmp al, 6
+		jge attribute11
+		cmp al, 4
+		jge attribute2
+		jmp attribute1		
+	format1:
+		cmp al, 0Eh
+		jge attribute11
+		cmp al, 7
+		jg veryBadByte
+		cmp al, 6
+		jl veryBadByte
+		jmp attribute11	
+	format2:
+		cmp al, 7
+		jle veryBadByte
+		cmp al, 0Bh
+		jle attribute1
+		cmp al, 0Eh
+		jl attribute2
+		jmp veryBadByte	
+	format3:
+		cmp al, 7
+		jle veryBadByte
+		cmp al, 0Bh
+		jle attribute1
+		cmp al, 0Eh
+		jl attribute2
+		jmp veryBadByte
+	format8:
+		cmp al, 3
+		jle attribute4
+		cmp al, 0Ch
+		jl veryBadByte
+		cmp al, 0Dh
+		jle attribute5
+		cmp al, 0Eh
+		je veryBadByte
+		jmp attribute6
+	formatA:
+		cmp al, 3
+		jle attribute12
+		jmp veryBadByte
+	formatC:
+		cmp al, 6
+		je attribute8
+		cmp al, 7
+		je attribute8
+		cmp al, 2
+		je attribute9
+		cmp al, 0Ah
+		je attribute9
+		cmp al, 0Dh
+		je attribute10
+		cmp al, 3
+		je attribute11
+		cmp al, 0Bh
+		je attribute11
+		cmp al, 0Fh
+		je attribute11
+		jmp veryBadByte
+	formatE:
+		cmp al, 2
+		je attribute14
+		cmp al, 3
+		je attribute14
+		cmp al, 0Bh
+		je attribute14
+		cmp al, 8
+		je attribute15
+		cmp al, 9
+		je attribute15
+		cmp al, 0Ah
+		je attribute16
+		jmp veryBadByte
+	formatF:
+		cmp al, 6
+		jl veryBadByte
+		cmp al, 7
+		jle attribute7
+		cmp al, 0Eh
+		jl veryBadByte
+		cmp al, 0Eh
+		je attribute7
+		mov al, byte ptr[bx+si]
+		cmp al, 0C7h
+		jle further
+		
+		further:
+		cmp al, 10h
+		jl veryBadByte
+		cmp al, 37h
+		jle attribute6
+		cmp al, 40h
+		jl veryBadByte
+		cmp al, 47h
+		jle attribute7
+		cmp al, 50h
+		jl veryBadByte
+		cmp al, 57h
+		jle attribute6
+		cmp al, 60h
+		jl veryBadByte
+		cmp al, 77h
+		jle attribute6
+		cmp al, 80h
+		jl veryBadByte
+		cmp al, 87h
+		jle attribute7
+		cmp al, 90h
+		jl veryBadByte
+		cmp al, 97h
+		jle attribute6
+		cmp al, 0A0h
+		jl veryBadByte
+		cmp al, 0B7h
+		jle attribute6
+		cmp al, 0C0h
+		jl veryBadByte
+		cmp al, 0C7h
+		jle attribute7
+		cmp al, 0D0h
+		jl veryBadByte
+		cmp al, 0D7h
+		jle attribute6
+		cmp al, 0E0h
+		jl veryBadByte
+		cmp al, 0F7h
+		jle attribute6
+		jmp veryBadByte
+			
+	attribute1:
+		mov attribute, 1
+		pop ax
+		pop cx
+		ret
+	attribute2:
+		mov attribute, 2
+		pop ax
+		pop cx
+		ret
+	attribute3:
+		mov attribute, 3
+		pop ax
+		pop cx
+		ret
+	attribute4:
+		mov attribute, 4
+		pop ax
+		pop cx
+		ret
+	attribute5:
+		mov attribute, 5
+		pop ax
+		pop cx
+		ret
+	attribute6:
+		mov attribute, 6
+		pop ax
+		pop cx
+		ret
+	attribute7:
+		mov attribute, 7
+		pop ax
+		pop cx
+		ret
+	attribute8:
+		mov attribute, 8
+		pop ax
+		pop cx
+		ret
+	attribute9:
+		mov attribute, 9
+		pop ax
+		pop cx
+		ret
+	attribute10:
+		mov attribute, 10
+		pop ax
+		pop cx
+		ret	
+	attribute11:
+		mov attribute, 11
+		pop ax
+		pop cx
+		ret
+	attribute12:
+		mov attribute, 12
+		pop ax
+		pop cx
+		ret
+	attribute13:
+		mov attribute, 13
+		pop ax
+		pop cx
+		ret
+	attribute14:
+		mov attribute, 14
+		pop ax
+		pop cx
+		ret
+	attribute15:
+		mov attribute, 15
+		pop ax
+		pop cx
+		ret
+	attribute16:
+		mov attribute, 16
+		pop ax
+		pop cx
+		ret	
+		
+	veryBadByte:
+		mov notFound, 1
+		inc byteNumber
+		pop ax
+		pop cx
+		ret
+whatAttributes endp
+
+proc createUnknown ;neatpazintos komandos eilutes sukurimas
+		push cx
+		push si
+		
+		call inputPointer
+		
+		push ax
+		mov al, colon			;input :
+		call input
+		
+		mov al, tab				;input tab
+		call input
+		pop ax
+		
+		mov cx, 2
+		call machineCodeInput	;input masininis kodas
+		
+		mov cx, 10
+		mov si, offset badCommand
+		call rewrite
+		
+		mov al, newLine			;input \n
+		call input
+		
+		add lineLength, 27
+		pop si
+		pop cx
+		ret
+createUnknown endp
 proc printLine
 	mov ah, 09h
 	int 21h
@@ -287,9 +678,8 @@ proc fileNameRead ;iraso parametro varda
 		mov ax, es:[si]
 		inc si
 		cmp al, 0dh 							 ; ? al = enter;
-		jne relativeJump1
-		jmp introduction						 ; isvesk intro
-	relativeJump1:
+		je introduction							 ; isvesk intro
+		;be .386 sitoj vietoj relative jump out of range
 		cmp al, 20h 							 ; ? al = space;
 		je begin
 		cmp ax, "?/"
@@ -315,6 +705,7 @@ proc fileNameRead ;iraso parametro varda
 		pop ax
 		ret
 fileNameRead endp
+
 proc openFile ;atidaro faila
 	open:
 		int 21h
@@ -325,6 +716,7 @@ proc openFile ;atidaro faila
 		call printLine
 		jmp finale
 openFile endp	
+
 proc readBuffer
 		push dx
 		push cx
@@ -350,6 +742,7 @@ proc readBuffer
 		mov ax, 0
 		jmp finale
 readBuffer endp
+
 proc closeFile
 		push ax
 	close:
@@ -365,6 +758,7 @@ proc closeFile
 		call printLine
 		jmp finale
 closeFile endp
+
 proc writeToFile
 		push bx
 		push dx
@@ -390,7 +784,8 @@ proc writeToFile
 		mov dx, offset writeError
 		call printLine
 		jmp doneWriting	
-writeToFile endp	
+writeToFile endp
+	
 end start
 	
 	
