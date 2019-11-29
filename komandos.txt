@@ -1,0 +1,62 @@
+1000 10dw mod reg r/m [poslinkis] – MOV registras <-> registras/atmintis
+1000 11d0 mod 0sr r/m [poslinkis] – MOV segmento registras <-> registras/atmintis
+1010 000w ajb avb – MOV akumuliatorius <- atmintis
+1010 001w ajb avb – MOV atmintis <- akumuliatorius
+1011 wreg bojb [bovb] – MOV registras <- betarpiškas operandas
+1100 011w mod 000 r/m [poslinkis] bojb [bovb] – MOV registras/atmintis <- betarpiškas operandas
+000sr 110 – PUSH segmento registras
+0101 0reg – PUSH registras (žodinis)
+1111 1111 mod 110 r/m [poslinkis] – PUSH registras/atmintis
+000sr 111 – POP segmento registras
+0101 1reg – POP registras (žodinis)
+1000 1111 mod 000 r/m [poslinkis] – POP registras/atmintis
+0000 00dw mod reg r/m [poslinkis] – ADD registras += registras/atmintis
+0000 010w bojb [bovb] – ADD akumuliatorius += betarpiškas operandas
+1000 00sw mod 000 r/m [poslinkis] bojb [bovb] – ADD registras/atmintis += betarpiškas operandas
+0100 0reg – INC registras (žodinis)
+1111 111w mod 000 r/m [poslinkis] – INC registras/atmintis
+0010 10dw mod reg r/m [poslinkis]– SUB registras -= registras/atmintis
+0010 110w bojb [bovb] – SUB akumuliatorius -= betarpiškas operandas
+1000 00sw mod 101 r/m [poslinkis] bojb [bovb] – SUB registras/atmintis -= betarpiškas operandas
+0100 1reg– DEC registras (žodinis)
+1111 111w mod 001 r/m [poslinkis] – DEC registras/atmintis
+0011 10dw mod reg r/m [poslinkis]– CMP registras ~ registras/atmintis
+0011 110w bojb [bovb] – CMP akumuliatorius ~ betarpiškas operandas
+1000 00sw mod 111 r/m [poslinkis] bojb [bovb] – CMP registras/atmintis ~ betarpiškas operandas
+1111 011w mod 100 r/m [poslinkis] – MUL registras/atmintis
+1111 011w mod 110 r/m [poslinkis] – DIV registras/atmintis
+1001 1010 ajb avb srjb srvb – CALL žymė (išorinis tiesioginis)
+1110 1000 pjb pvb – CALL žymė (vidinis tiesioginis)
+1111 1111 mod 010 r/m [poslinkis] – CALL adresas (vidinis netiesioginis)
+1111 1111 mod 011 r/m [poslinkis] – CALL adresas (išorinis netiesioginis)
+1100 0010 bojb bovb – RET betarpiškas operandas; RETN betarpiškas operandas
+1100 0011 – RET; RETN
+1100 1010 bojb bovb – RETF betarpiškas operandas
+1100 1011 – RETF
+1100 1111 – IRET
+1110 1001 pjb pvb – JMP žymė (vidinis tiesioginis)
+1110 1010 ajb avb srjb srvb – JMP žymė (išorinis tiesioginis)
+1110 1011 poslinkis – JMP žymė (vidinis artimas)
+1111 1111 mod 100 r/m [poslinkis] – JMP adresas (vidinis netiesioginis)
+1111 1111 mod 101 r/m [poslinkis] – JMP adresas (išorinis netiesioginis)
+0111 0000 poslinkis – JO žymė
+0111 0001 poslinkis – JNO žymė
+0111 0010 poslinkis – JNAE žymė; JB žymė; JC žymė
+0111 0011 poslinkis – JAE žymė; JNB žymė; JNC žymė
+0111 0100 poslinkis – JE žymė; JZ žymė
+0111 0101 poslinkis – JNE žymė; JNZ žymė
+0111 0110 poslinkis – JBE žymė; JNA žymė
+0111 0111 poslinkis – JA žymė; JNBE žymė
+0111 1000 poslinkis – JS žymė
+0111 1001 poslinkis – JNS žymė
+0111 1010 poslinkis – JP žymė; JPE žymė
+0111 1011 poslinkis – JNP žymė; JPO žymė
+0111 1100 poslinkis – JL žymė; JNGE žymė
+0111 1101 poslinkis – JGE žymė; JNL žymė
+0111 1110 poslinkis – JLE žymė; JNG žymė
+0111 1111 poslinkis – JG žymė; JNLE žymė
+1110 0011 poslinkis – JCXZ žymė
+1110 0010 poslinkis – LOOP žymė
+1100 1100 – INT 3
+1100 1101 numeris – INT numeris
+1100 1110 – INTO
