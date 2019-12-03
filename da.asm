@@ -682,6 +682,7 @@ proc mainFunction
 		pop di
 		pop ax
 		call IPandMC
+		mov cx, 3
 		cmp theFormat, 0
 		je A2F0
 		cmp theFormat, 2
@@ -919,18 +920,15 @@ proc mainFunction
 			cmp al, 0CFh
 			je A11IRET
 				mov si, offset comRET
-				call rewrite
-				jmp mainFunctionOver
+				jmp A11final
 			A11RETF:
 				inc cx
 				mov si, offset comRETF
-				call rewrite
-				jmp mainFunctionOver
+				jmp A11final
 			A11IRET:
 				inc cx
 				mov si, offset comIRET
-				call rewrite
-				jmp mainFunctionOver
+				jmp A11final
 		A11F0:
 			cmp al, 0Fh
 			je A11POPCS
@@ -944,8 +942,7 @@ proc mainFunction
 					call rewrite
 					mov cx, 2
 					mov si, offset preES
-					call rewrite
-					jmp mainFunctionOver
+					jmp A11final
 			A11POPCS:
 				mov si, offset comPOP
 				jmp A11CS
@@ -956,8 +953,7 @@ proc mainFunction
 					call rewrite
 					mov cx, 2
 					mov si, offset preCS
-					call rewrite
-					jmp mainFunctionOver
+					jmp A11final
 			A11POPES:
 				mov si, offset comPOP
 				jmp A11ES
@@ -970,12 +966,12 @@ proc mainFunction
 			je A11POPSS
 				inc si
 				mov si, offset comPUSH
+				inc cx
 				A11DS:
 					call rewrite
 					mov cx,2
 					mov si, offset preDS
-					call rewrite
-					jmp mainFunctionOver
+					jmp A11final
 			A11PUSHSS:
 				inc si
 				mov si, offset comPUSH
@@ -983,14 +979,18 @@ proc mainFunction
 					call rewrite
 					mov cx, 2
 					mov si, offset preSS
-					call rewrite
-					jmp mainFunctionOver
+					jmp A11final
 			A11POPDS:
 				mov si, offset comPOP
 				jmp A11DS
 			A11POPSS:
 				mov si, offset comPOP
 				jmp A11SS
+				A11final:
+					mov al, tab
+					call input
+					call rewrite
+					jmp mainFunctionOver
 	A12:
 		add byteNumber, 3
 		call getDbit
@@ -1521,7 +1521,7 @@ proc directAddress
 	dec si
 	mov al, byte ptr[bx+si] 
 	mov di, offset poslinkis
-	mov cl, 4
+	mov cx, 4
 	call hexInput
 	inc si
 	pop cx
