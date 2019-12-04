@@ -82,8 +82,8 @@ wBufSize equ 40h
 	rm7				db "B","X"
 	segReg			db "E", "C", "S", "D"
 	notFound		db ?
-	attribute		db ?
-	theFormat		db ?						
+	theFormat		db ?
+	attribute		db ?						
 	dBit			db ?
 	wBit			db ?
 	abMod			db ?
@@ -91,7 +91,42 @@ wBufSize equ 40h
 	abRM			db ?
 	poslinkis		db 4 dup (0)
 	operands		db 16 dup (0)
-.code 
+	
+lentele	 db 1, 1, 1, 1, 2, 2, 11, 11, 0, 0, 0, 0, 0, 0, 11, 11   			;0
+		 db 0, 0, 0, 0, 0, 0, 11, 11, 0, 0, 0, 0, 0, 0, 11, 11				;1
+		 db 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 2, 2, 0, 0					;2
+		 db 0, 0, 0, 0, 0, 0, 0, 0,1, 1, 1, 1, 2, 2, 0, 0					;3
+		 db 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3					;4
+		 db 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3					;5
+		 db 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,0, 0, 0, 0					;6
+		 db 14, 14, 14, 14, 14, 14, 14, 14, 14, 14, 14, 14, 14, 14, 14, 14  ;7
+		 db 4, 4, 4, 4, 0, 0, 0, 0, 1, 1, 1, 1, 5, 0, 5, 6					;8
+		 db 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 16, 0, 0, 0, 0, 0					;9
+		 db 12, 12, 12, 12, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 				;A
+		 db 13, 13, 13, 13, 13, 13, 13, 13, 13, 13, 13, 13, 13, 13, 13, 13  ;B
+		 db 0, 0, 0, 11, 0, 0, 8, 8, 0, 0, 10, 11, 0, 10, 0, 11   	  	    ;C
+		 db 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0		  		    ;D
+		 db 0, 0, 14, 14, 0, 0, 0, 0, 15, 15, 16, 14, 0 , 0, 0, 0 			;E
+		 db 0, 0, 0, 0, 0, 0, 7, 7, 0, 0, 0, 0, 0, 0, 7, 20 	  			;F
+		 
+lentele2 db 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
+		 db 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6
+		 db 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6
+		 db 6, 6, 6, 6, 6, 6, 6, 6, 0, 0, 0, 0, 0, 0, 0, 0
+		 db 7, 7, 7, 7, 7, 7, 7, 7, 0, 0, 0, 0, 0, 0, 0, 0
+		 db 6, 6, 6, 6, 6, 6, 6, 6, 0, 0, 0, 0, 0, 0, 0, 0
+		 db 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6
+		 db 6, 6, 6, 6, 6, 6, 6, 6, 0, 0, 0, 0, 0, 0, 0, 0
+		 db 7, 7, 7, 7, 7, 7, 7, 7, 0, 0, 0, 0, 0, 0, 0, 0
+		 db 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6
+		 db 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6
+		 db 6, 6, 6, 6, 6, 6, 6, 6, 0, 0, 0, 0, 0, 0, 0, 0
+		 db 7, 7, 7, 7, 7, 7, 7, 7, 0, 0, 0, 0, 0, 0, 0, 0
+		 db 6, 6, 6, 6, 6, 6, 6, 6, 0, 0, 0, 0, 0, 0, 0, 0
+		 db 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6
+		 db 6, 6, 6, 6, 6, 6, 6, 6, 0, 0, 0, 0, 0, 0, 0, 0
+	
+.code 				
 start:
 	mov ax, @data
 	mov ds, ax									
@@ -128,17 +163,32 @@ algorithm:
 	inc si
 	call prefixCheck 		 				 	 
 	cmp trueFalse, 1
-	je write	
+	je write
 		call whatFormat  						
 		cmp notFound, 1
 		je unknownCommand
-			call whatAttributes 						
-			cmp notFound, 1
+			push si
+			push dx
+			mov si, offset lentele
+			add si, ax
+			mov dl, byte ptr[si]
+			mov attribute, dl
+			pop dx
+			pop si
+			cmp attribute, 0
 			je unknownCommand
-				call mainFunction						
-				jmp write
-unknownCommand:
-	call createUnknown 							
+				cmp attribute, 20
+				je attributeFF
+					attributeFound:
+						call mainFunction						
+						jmp write
+				attributeFF:
+					call checkMore
+					cmp notFound, 0
+					je attributeFound
+			unknownCommand:
+				inc byteNumber
+				call createUnknown 							
 write:
 	call findLineLength
 	call writeToFile
@@ -162,6 +212,53 @@ introduction:
 	call printLine
 	jmp finale
 ;------------------proceduros---------------------------------
+proc checkMore
+	push ax
+	push si
+	push dx
+	mov al, byte ptr[bx+si]
+	mov si, offset lentele2
+	add si, ax
+	mov dl, byte ptr[si]
+	cmp dl, 0
+	je nooooo
+	mov attribute, dl
+	jmp cmfinish
+	nooooo:
+	mov notFound, 1
+	cmfinish:
+	pop dx
+	pop si
+	pop ax
+	ret
+checkMore endp
+
+proc whatFormat 
+	push ax
+	push cx
+	xor cx, cx
+	shr al, 4
+	cmp al, 6h
+	je badByte
+	cmp al, 0Dh
+	je badByte
+	comparing:
+		cmp al, cl
+		je formating
+		inc cl
+		jmp comparing	
+		formating:
+			mov theFormat, cl
+			stopFormating:
+				pop cx
+				pop ax
+				ret
+	badByte:
+		mov notFound, 1
+		inc byteNumber
+		jmp stopFormating
+whatFormat endp
+
 proc prefixCheck
 	push si
 	push cx
@@ -305,268 +402,6 @@ proc hexInput
 				add dl, 7h
 				jmp mainInput
 hexInput endp
-
-proc whatFormat 
-	push ax
-	push cx
-	xor cx, cx
-	shr al, 4
-	cmp al, 6h
-	je badByte
-	cmp al, 0Dh
-	je badByte
-	comparing:
-		cmp al, cl
-		je formating
-		inc cl
-		jmp comparing	
-		formating:
-			mov theFormat, cl
-			stopFormating:
-				pop cx
-				pop ax
-				ret
-	badByte:
-		mov notFound, 1
-		inc byteNumber
-		jmp stopFormating
-whatFormat endp	
-
-proc whatAttributes
-	push ax
-	and al, 00001111b
-	cmp theFormat, 0
-	je format0
-	cmp theFormat, 1
-	je format1
-	cmp theFormat, 2
-	je format2
-	cmp theFormat, 3
-	je format3
-	cmp theFormat, 4
-	je attribute3
-	cmp theFormat, 5
-	je attribute3
-	cmp theFormat, 7
-	je attribute14
-	cmp theFormat, 8
-	je format8
-	cmp theFormat, 9
-	je attribute16
-	cmp theFormat, 10
-	je formatA
-	cmp theFormat, 11
-	je attribute13
-	cmp theFormat, 12
-	je formatC
-	cmp theFormat, 14
-	je formatE
-	jmp formatF		
-	format0:	
-		cmp al, 0Eh
-		jae attribute11
-		cmp al, 8
-		jae veryBadByte
-		cmp al, 6
-		jae attribute11
-		cmp al, 4
-		jae attribute2
-		jmp attribute1		
-	format1:
-		cmp al, 0Eh
-		jae attribute11
-		cmp al, 7
-		ja veryBadByte
-		cmp al, 6
-		jb veryBadByte
-		jmp attribute11	
-	format2:
-		cmp al, 7
-		jbe veryBadByte
-		cmp al, 0Bh
-		jbe attribute1
-		cmp al, 0Eh
-		jb attribute2
-		jmp veryBadByte	
-	format3:
-		cmp al, 7
-		jbe veryBadByte
-		cmp al, 0Bh
-		jbe attribute1
-		cmp al, 0Eh
-		jb attribute2
-		jmp veryBadByte
-	format8:
-		cmp al, 3
-		jbe attribute4
-		cmp al, 8
-		je attribute1
-		cmp al, 0Ah
-		je attribute1
-		cmp al, 0Ch
-		jb veryBadByte
-		cmp al, 0Dh
-		jbe attribute5
-		cmp al, 0Eh
-		je veryBadByte
-		jmp attribute6
-	formatA:
-		cmp al, 3
-		jbe attribute12
-		jmp veryBadByte
-	formatC:
-		cmp al, 6
-		je attribute8
-		cmp al, 7
-		je attribute8
-		cmp al, 2
-		je attribute9
-		cmp al, 0Ah
-		je attribute9
-		cmp al, 0Dh
-		je attribute10
-		cmp al, 3
-		je attribute11
-		cmp al, 0Bh
-		je attribute11
-		cmp al, 0Fh
-		je attribute11
-		jmp veryBadByte
-	formatE:
-		cmp al, 2
-		je attribute14
-		cmp al, 3
-		je attribute14
-		cmp al, 0Bh
-		je attribute14
-		cmp al, 8
-		je attribute15
-		cmp al, 9
-		je attribute15
-		cmp al, 0Ah
-		je attribute16
-		jmp veryBadByte
-	formatF:
-		cmp al, 6
-		jb veryBadByte
-		cmp al, 7
-		jbe attribute7
-		cmp al, 0Eh
-		jb veryBadByte
-		cmp al, 0Eh
-		je attribute7
-		mov al, byte ptr[bx+si]
-		cmp al, 0Fh
-		jb veryBadByte
-		cmp al, 37h
-		jbe attribute6
-		cmp al, 40h
-		jb veryBadByte
-		cmp al, 47h
-		jbe attribute7
-		cmp al, 50h
-		jb veryBadByte
-		cmp al, 57h
-		jbe attribute6
-		cmp al, 60h
-		jb veryBadByte
-		cmp al, 77h
-		jbe attribute6
-		cmp al, 80h
-		jb veryBadByte
-		cmp al, 87h
-		jbe attribute7
-		cmp al, 90h
-		jb veryBadByte
-		cmp al, 97h
-		jbe attribute6
-		cmp al, 0A0h
-		jb veryBadByte
-		cmp al, 0B7h
-		jbe attribute6
-		cmp al, 0C0h
-		jb veryBadByte
-		cmp al, 0C7h
-		jbe attribute7
-		cmp al, 0D0h
-		jb veryBadByte
-		cmp al, 0D7h
-		jbe attribute6
-		cmp al, 0E0h
-		jb veryBadByte
-		cmp al, 0F7h
-		jbe attribute6
-		jmp veryBadByte	
-		attribute1:
-			mov attribute, 1
-			pop ax
-			ret
-		attribute2:
-			mov attribute, 2
-			pop ax
-			ret
-		attribute3:
-			mov attribute, 3
-			pop ax
-			ret
-		attribute4:
-			mov attribute, 4
-			pop ax
-			ret
-		attribute5:
-			mov attribute, 5
-			pop ax
-			ret
-		attribute6:
-			mov attribute, 6
-			pop ax
-			ret
-		attribute7:
-			mov attribute, 7
-			pop ax
-			ret
-		attribute8:
-			mov attribute, 8
-			pop ax
-			ret
-		attribute9:
-			mov attribute, 9
-			pop ax
-			ret
-		attribute10:
-			mov attribute, 10
-			pop ax
-			ret	
-		attribute11:
-			mov attribute, 11
-			pop ax
-			ret
-		attribute12:
-			mov attribute, 12
-			pop ax
-			ret
-		attribute13:
-			mov attribute, 13
-			pop ax
-			ret
-		attribute14:
-			mov attribute, 14
-			pop ax
-			ret
-		attribute15:
-			mov attribute, 15
-			pop ax
-			ret
-		attribute16:
-			mov attribute, 16
-			pop ax
-			ret	
-	veryBadByte:
-		mov notFound, 1
-		inc byteNumber
-		pop ax
-		ret
-whatAttributes endp
 
 proc createUnknown 
 	push cx
