@@ -145,7 +145,6 @@ start:
 	mov wHandle, ax
 	call readBuffer							
 	push bx
-	push bp
 	push dx
 	push di
 	push ax
@@ -193,7 +192,6 @@ write:
 	pop ax
 	pop di
 	pop dx
-	pop bp
 	pop bx	
 	mov bx, rHandle 
 	call closeFile 								
