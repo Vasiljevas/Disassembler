@@ -1,10 +1,11 @@
 .model small 
 .386	
-rBufSize equ 400h   																
-wBufSize equ 40h 																	 
+	rBufSize equ 400h   																
+	wBufSize equ 40h 																	 
 .stack 100h 	
 .data 	
-	intro			db "Andrius Vasiljevas, 1 kursas, 2 grupe, programa:",10,13,"vercia masinini koda i assemblerio koda.",10,13,'$'
+	intro			db "Andrius Vasiljevas, 1 kursas, 2 grupe, programa:", 10, 13
+					db "vercia masinini koda i assemblerio koda.", 10, 13, '$'
 	openError		db "ivyko klaida atidarant faila",10,13,'$'					
 	readError		db "ivyko klaida skaitant faila", 10,13,'$'
 	closeError		db "ivyko klaida uzdarant faila", 10,13,'$'
@@ -25,7 +26,6 @@ wBufSize equ 40h
 	plus			db "+"		   
 	tab				db "	"
 	machineCode		db 13 dup (20h)												
-	space			db " "
 	badCommand 		db "N", "E", "S", "U", "P", "R", "A", "S", "T", "A"
 	trueFalse		db ?
 	preES			db "ES"
@@ -81,8 +81,7 @@ wBufSize equ 40h
 	rm6				db "B","P"
 	rm7				db "B","X"
 	segReg			db "E", "C", "S", "D"
-	notFound		db ?
-	theFormat		db ?
+	halfByte		db ?
 	attribute		db ?						
 	dBit			db ?
 	wBit			db ?
@@ -90,42 +89,41 @@ wBufSize equ 40h
 	abReg			db ?
 	abRM			db ?
 	poslinkis		db 4 dup (0)
-	operands		db 16 dup (0)
-	
-lentele	 db 1, 1, 1, 1, 2, 2, 11, 11, 0, 0, 0, 0, 0, 0, 11, 11   			;0
-		 db 0, 0, 0, 0, 0, 0, 11, 11, 0, 0, 0, 0, 0, 0, 11, 11				;1
-		 db 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 2, 2, 0, 0					;2
-		 db 0, 0, 0, 0, 0, 0, 0, 0,1, 1, 1, 1, 2, 2, 0, 0					;3
-		 db 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3					;4
-		 db 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3					;5
-		 db 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,0, 0, 0, 0					;6
-		 db 14, 14, 14, 14, 14, 14, 14, 14, 14, 14, 14, 14, 14, 14, 14, 14  ;7
-		 db 4, 4, 4, 4, 0, 0, 0, 0, 1, 1, 1, 1, 5, 0, 5, 6					;8
-		 db 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 16, 0, 0, 0, 0, 0					;9
-		 db 12, 12, 12, 12, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 				;A
-		 db 13, 13, 13, 13, 13, 13, 13, 13, 13, 13, 13, 13, 13, 13, 13, 13  ;B
-		 db 0, 0, 0, 11, 0, 0, 8, 8, 0, 0, 10, 11, 0, 10, 0, 11   	  	    ;C
-		 db 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0		  		    ;D
-		 db 0, 0, 14, 14, 0, 0, 0, 0, 15, 15, 16, 14, 0 , 0, 0, 0 			;E
-		 db 0, 0, 0, 0, 0, 0, 7, 7, 0, 0, 0, 0, 0, 0, 7, 20 	  			;F
-		 
-lentele2 db 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
-		 db 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6
-		 db 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6
-		 db 6, 6, 6, 6, 6, 6, 6, 6, 0, 0, 0, 0, 0, 0, 0, 0
-		 db 7, 7, 7, 7, 7, 7, 7, 7, 0, 0, 0, 0, 0, 0, 0, 0
-		 db 6, 6, 6, 6, 6, 6, 6, 6, 0, 0, 0, 0, 0, 0, 0, 0
-		 db 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6
-		 db 6, 6, 6, 6, 6, 6, 6, 6, 0, 0, 0, 0, 0, 0, 0, 0
-		 db 7, 7, 7, 7, 7, 7, 7, 7, 0, 0, 0, 0, 0, 0, 0, 0
-		 db 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6
-		 db 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6
-		 db 6, 6, 6, 6, 6, 6, 6, 6, 0, 0, 0, 0, 0, 0, 0, 0
-		 db 7, 7, 7, 7, 7, 7, 7, 7, 0, 0, 0, 0, 0, 0, 0, 0
-		 db 6, 6, 6, 6, 6, 6, 6, 6, 0, 0, 0, 0, 0, 0, 0, 0
-		 db 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6
-		 db 6, 6, 6, 6, 6, 6, 6, 6, 0, 0, 0, 0, 0, 0, 0, 0
-	
+	operands		db 16 dup (0)	
+	;formatavimas
+	lentele		    db 1, 1, 1, 1, 2, 2, 11, 11, 0, 0, 0, 0, 0, 0, 11, 11   			;0
+					db 0, 0, 0, 0, 0, 0, 11, 11, 0, 0, 0, 0, 0, 0, 11, 11				;1
+					db 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 2, 2, 0, 0					;2
+					db 0, 0, 0, 0, 0, 0, 0, 0,1, 1, 1, 1, 2, 2, 0, 0					;3
+					db 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3					;4
+					db 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3					;5
+					db 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,0, 0, 0, 0					;6
+					db 14, 14, 14, 14, 14, 14, 14, 14, 14, 14, 14, 14, 14, 14, 14, 14   ;7
+					db 4, 4, 4, 4, 0, 0, 0, 0, 1, 1, 1, 1, 5, 0, 5, 6					;8
+					db 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 16, 0, 0, 0, 0, 0					;9
+					db 12, 12, 12, 12, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 				;A
+					db 13, 13, 13, 13, 13, 13, 13, 13, 13, 13, 13, 13, 13, 13, 13, 13   ;B
+					db 0, 0, 0, 11, 0, 0, 8, 8, 0, 0, 10, 11, 0, 10, 0, 11   	  	    ;C
+					db 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0		  		    ;D
+					db 0, 0, 14, 14, 0, 0, 0, 0, 15, 15, 16, 14, 0 , 0, 0, 0 			;E
+					db 0, 0, 0, 0, 0, 0, 7, 7, 0, 0, 0, 0, 0, 0, 7, 20 	  				;F
+	;adresavimo baito patikrinimas, jeigu opk yra FF 
+	lentele2 		db 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
+					db 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6
+					db 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6
+					db 6, 6, 6, 6, 6, 6, 6, 6, 0, 0, 0, 0, 0, 0, 0, 0
+					db 7, 7, 7, 7, 7, 7, 7, 7, 0, 0, 0, 0, 0, 0, 0, 0
+					db 6, 6, 6, 6, 6, 6, 6, 6, 0, 0, 0, 0, 0, 0, 0, 0
+					db 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6
+					db 6, 6, 6, 6, 6, 6, 6, 6, 0, 0, 0, 0, 0, 0, 0, 0
+					db 7, 7, 7, 7, 7, 7, 7, 7, 0, 0, 0, 0, 0, 0, 0, 0
+					db 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6
+					db 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6
+					db 6, 6, 6, 6, 6, 6, 6, 6, 0, 0, 0, 0, 0, 0, 0, 0
+					db 7, 7, 7, 7, 7, 7, 7, 7, 0, 0, 0, 0, 0, 0, 0, 0
+					db 6, 6, 6, 6, 6, 6, 6, 6, 0, 0, 0, 0, 0, 0, 0, 0
+					db 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6
+					db 6, 6, 6, 6, 6, 6, 6, 6, 0, 0, 0, 0, 0, 0, 0, 0
 .code 				
 start:
 	mov ax, @data
@@ -158,37 +156,34 @@ start:
 algorithm:
 	xor ax, ax
 	mov di, offset writeBuf	
-	mov notFound, 0								
 	mov al, byte ptr[bx+si]	
 	inc si
 	call prefixCheck 		 				 	 
 	cmp trueFalse, 1
 	je write
 		call whatFormat  						
-		cmp notFound, 1
+		push si
+		push dx
+		mov si, offset lentele
+		add si, ax
+		mov dl, byte ptr[si]
+		mov attribute, dl
+		pop dx
+		pop si
+		cmp attribute, 0
 		je unknownCommand
-			push si
-			push dx
-			mov si, offset lentele
-			add si, ax
-			mov dl, byte ptr[si]
-			mov attribute, dl
-			pop dx
-			pop si
-			cmp attribute, 0
-			je unknownCommand
-				cmp attribute, 20
-				je attributeFF
-					attributeFound:
-						call mainFunction						
-						jmp write
-				attributeFF:
-					call checkMore
-					cmp notFound, 0
-					je attributeFound
-			unknownCommand:
-				inc byteNumber
-				call createUnknown 							
+			cmp attribute, 20
+			je attributeFF
+				attributeFound:
+					call mainFunction						
+					jmp write
+			attributeFF:
+				call checkMore
+				cmp attribute, 0
+				jne attributeFound
+		unknownCommand:
+			inc byteNumber
+			call createUnknown 							
 write:
 	call findLineLength
 	call writeToFile
@@ -211,7 +206,7 @@ introduction:
 	mov dx, offset intro
 	call printLine
 	jmp finale
-;------------------proceduros---------------------------------
+;------------------functions---------------------------------
 proc checkMore
 	push ax
 	push si
@@ -220,45 +215,28 @@ proc checkMore
 	mov si, offset lentele2
 	add si, ax
 	mov dl, byte ptr[si]
-	cmp dl, 0
-	je nooooo
 	mov attribute, dl
-	jmp cmfinish
-	nooooo:
-	mov notFound, 1
-	cmfinish:
 	pop dx
 	pop si
 	pop ax
 	ret
 checkMore endp
-
 proc whatFormat 
 	push ax
 	push cx
 	xor cx, cx
 	shr al, 4
-	cmp al, 6h
-	je badByte
-	cmp al, 0Dh
-	je badByte
 	comparing:
 		cmp al, cl
 		je formating
 		inc cl
 		jmp comparing	
 		formating:
-			mov theFormat, cl
-			stopFormating:
-				pop cx
-				pop ax
-				ret
-	badByte:
-		mov notFound, 1
-		inc byteNumber
-		jmp stopFormating
+			mov halfByte, cl
+			pop cx
+			pop ax
+			ret
 whatFormat endp
-
 proc prefixCheck
 	push si
 	push cx
@@ -299,7 +277,6 @@ proc prefixCheck
 			call writePrefix
 			jmp back
 prefixCheck endp
-
 proc rewrite
 	push ax
 	taking:
@@ -310,7 +287,6 @@ proc rewrite
 	pop ax
 	ret	
 rewrite endp
-
 proc machineCodeInput
 	push dx
 	push cx
@@ -334,7 +310,6 @@ proc machineCodeInput
 	pop dx  
 	ret
 machineCodeInput endp
-
 proc writePrefix  
 	push si	
 	call IPandMC	
@@ -346,7 +321,6 @@ proc writePrefix
 	pop si
 	ret	
 writePrefix endp
-
 proc input
 	mov byte ptr[di], al
 	inc di
@@ -371,7 +345,6 @@ proc IPandMC
 	call machineCodeInput
 	ret
 IPandMC endp
-
 proc hexInput 
 	push bx
 	push dx
@@ -402,7 +375,6 @@ proc hexInput
 				add dl, 7h
 				jmp mainInput
 hexInput endp
-
 proc createUnknown 
 	push cx
 	push si
@@ -414,7 +386,6 @@ proc createUnknown
 	pop cx
 	ret
 createUnknown endp
-
 proc getEverything
 	call getDbit
 	call getWbit
@@ -423,7 +394,6 @@ proc getEverything
 	call getRM
 	ret
 getEverything endp
-
 proc mainFunction
 	push cx 
 	push si 
@@ -483,11 +453,11 @@ proc mainFunction
 				pop ax
 				call IPandMC
 				mov cx, 3		
-				cmp theFormat, 0
+				cmp halfByte, 0
 				je A1F0
-				cmp theFormat, 2
+				cmp halfByte, 2
 				je A1F2
-				cmp theFormat, 3
+				cmp halfByte, 3
 				je A1F3
 					mov si, offset comMOV
 				call rewrite
@@ -518,9 +488,9 @@ proc mainFunction
 		pop ax
 		call IPandMC
 		mov cx, 3
-		cmp theFormat, 0
+		cmp halfByte, 0
 		je A2F0
-		cmp theFormat, 2
+		cmp halfByte, 2
 		je A2F2
 			mov si, offset comCMP
 			call rewrite
@@ -551,7 +521,7 @@ proc mainFunction
 		pop ax
 		and al, 00001000b
 		mov cx, 3
-		cmp theFormat, 5
+		cmp halfByte, 5
 		je A3F5
 			cmp al, 0
 			je A3inc
@@ -642,7 +612,7 @@ proc mainFunction
 		pop ax
 		call IPandMC
 		mov cx, 3
-		cmp theFormat, 8
+		cmp halfByte, 8
 		jne A6notPop
 			mov si, offset comPOP
 			jmp A6finish
@@ -746,9 +716,9 @@ proc mainFunction
 		call IPandMC
 		mov cx, 3
 		pop ax
-		cmp theFormat, 0
+		cmp halfByte, 0
 		je A11F0
-		cmp theFormat, 1
+		cmp halfByte, 1
 		je A11F1
 			cmp al, 0CBh
 			je A11RETF
@@ -901,7 +871,7 @@ proc mainFunction
 			pop di
 			call IPandMC
 			pop ax
-			cmp theFormat, 0Eh
+			cmp halfByte, 0Eh
 			je A14E	
 				mov cx, 3
 				cmp al, 71h
@@ -1045,7 +1015,7 @@ proc mainFunction
 		pop ax
 		call IPandMC
 		mov cx, 3
-		cmp theFormat, 9
+		cmp halfByte, 9
 		je laCall
 			mov si, offset comJMP
 			jmp laFinish
@@ -1060,8 +1030,7 @@ proc mainFunction
 							pop cx
 							ret
 mainFunction endp
-
-proc findJump ; cx = poslinkis
+proc findJump
 	push ax
 	mov ax, iPointer
 	add al, byteNumber
@@ -1071,7 +1040,6 @@ proc findJump ; cx = poslinkis
 	pop ax
 	ret
 findJump endp
-
 proc findSegment
 	push ax
 	push si
@@ -1088,7 +1056,6 @@ proc findSegment
 	pop ax
 	ret
 findSegment endp
-
 proc betarpOperand
 	push si
 	push cx
@@ -1109,7 +1076,6 @@ proc betarpOperand
 			pop si
 			ret
 betarpOperand endp
-
 proc findAkum 
 	push si
 	cmp wBit, 1
@@ -1123,7 +1089,6 @@ proc findAkum
 			pop si
 			ret	
 findAkum endp
-
 proc inputRM
 	cmp abMod, 11b
 	je useRegisterslmao
@@ -1220,14 +1185,12 @@ proc inputRM
 		call inputRegister
 		ret
 inputRM endp
-
 proc findRegwithAbReg
 	xor ax, ax
 	mov al, abReg
 	mov cx, ax
 	ret
 findRegwithAbReg endp
-
 proc suPoslinkiu
 	push si
 	mov si, offset poslinkis
@@ -1238,7 +1201,6 @@ proc suPoslinkiu
 	pop si
 	ret
 suPoslinkiu endp
-
 proc expandRule 
 	push di
 	push ax
@@ -1259,19 +1221,16 @@ proc expandRule
 		pop di
 		ret
 expandRule endp
-
 proc rmcl5
 	mov cx, 5
 	call rewrite
 	ret
 rmcl5 endp
-
 proc rmcl2
 	mov cx, 2
 	call rewrite
 	ret
 rmcl2 endp
-
 proc theComma
 	push si
 	mov si, offset comma
@@ -1280,7 +1239,6 @@ proc theComma
 	pop si
 	ret
 theComma endp
-
 proc inputRegister
 	push si
 	mov si, offset register
@@ -1289,7 +1247,6 @@ proc inputRegister
 	pop si
 	ret
 inputRegister endp
-
 proc findReg
 	push di 
 	push si
@@ -1329,13 +1286,11 @@ proc findReg
 		pop di
 		ret
 findReg endp
-
 proc useTableMov
 	mov al, byte ptr[si]
 	mov byte ptr[di], al
 	ret
 useTableMov endp
-
 proc inputOperandLine
 	push cx
 	mov al, tab
@@ -1346,7 +1301,6 @@ proc inputOperandLine
 	pop cx
 	ret
 inputOperandLine endp
-
 proc directAddress 
 	push ax
 	push di
@@ -1364,7 +1318,6 @@ proc directAddress
 	pop ax
 	ret
 directAddress endp
-
 proc getDbit
 	push ax
 	and al, 00000010b
@@ -1373,7 +1326,6 @@ proc getDbit
 	pop ax
 	ret
 getDbit endp
-
 proc getWbit
 	push ax
 	and al, 00000001b
@@ -1381,7 +1333,6 @@ proc getWbit
 	pop ax
 	ret
 getWbit endp
-
 proc getMod
 	push ax
 	mov al, byte ptr[bx+si] 
@@ -1391,7 +1342,6 @@ proc getMod
 	pop ax
 	ret
 getMod endp
-
 proc getReg
 	push ax
 	mov al, byte ptr[bx+si]
@@ -1401,7 +1351,6 @@ proc getReg
 	pop ax
 	ret
 getReg endp
-
 proc getRM
 	push ax
 	mov al, byte ptr[bx+si]
@@ -1410,13 +1359,11 @@ proc getRM
 	pop ax
 	ret
 getRM endp
-
 proc printLine
 	mov ah, 09h
 	int 21h
 	ret
 printLine endp
-
 proc fileNameRead 
 	push ax
 	begin:
@@ -1447,7 +1394,6 @@ proc fileNameRead
 		pop ax
 		ret
 fileNameRead endp
-
 proc openFile 
 	int 21h
 	jc oError 
@@ -1457,7 +1403,6 @@ proc openFile
 		call printLine
 		jmp finale
 openFile endp	
-
 proc readBuffer
 	push dx
 	push cx
@@ -1479,7 +1424,6 @@ proc readBuffer
 		mov ax, 0
 		jmp finale
 readBuffer endp
-
 proc closeFile
 	push ax
 	mov ah, 3eh
@@ -1492,7 +1436,6 @@ proc closeFile
 		call printLine
 		jmp finale
 closeFile endp
-
 proc findLineLength
 	push si
 	push cx
@@ -1512,7 +1455,6 @@ proc findLineLength
 		pop si
 		ret
 findLineLength endp
-
 proc writeToFile
 	push bx
 	push dx
@@ -1536,7 +1478,6 @@ proc writeToFile
 		call printLine
 		jmp doneWriting	
 writeToFile endp
-
 proc resetBuffers
 	push cx
 	push si
@@ -1555,7 +1496,6 @@ proc resetBuffers
 	pop cx
 	ret
 endp resetBuffers
-
 proc zeroOut
 	loopityloop:
 		mov byte ptr[si], 0
@@ -1563,5 +1503,4 @@ proc zeroOut
 		loop loopityloop
 	ret		
 zeroOut endp
-
 end start
